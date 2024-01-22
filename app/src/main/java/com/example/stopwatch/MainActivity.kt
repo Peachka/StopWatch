@@ -39,8 +39,19 @@ import androidx.compose.runtime.livedata.observeAsState
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.em
+import androidx.constraintlayout.compose.ConstraintLayout
+import kotlin.concurrent.timer
 
 
 class MainActivity : ComponentActivity() {
@@ -91,7 +102,7 @@ fun lazy(timeViewModel: TimeViewModel, screenH: Float){
 
     LazyColumn (modifier = Modifier
         .fillMaxWidth()
-        .height((screenH*0.11).dp)){
+        .height((screenH * 0.11).dp)){
         items(itemList.size) { message ->
             Text( text = itemList[message],
                 color = Color.White,
@@ -106,113 +117,236 @@ fun TimeText(timeViewModel: TimeViewModel, screenHeight: Float, screenWidth: Flo
     val timeSec by timeViewModel.getTime1Data().observeAsState("00")
     val timeMin by timeViewModel.getTime2Data().observeAsState("00")
     val timeMilli by timeViewModel.getTime3Data().observeAsState("00")
+    val timeHours by timeViewModel.getTime4Data().observeAsState("00")
     val nameStart by timeViewModel.getButtonNameContinue().observeAsState("Start")
     val nameStop by timeViewModel.getButtonNameStop().observeAsState("Stop")
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
-    ) {
+    ConstraintLayout(
+        modifier = Modifier
+            .height(screenHeight.dp)
+            .width(screenWidth.dp)
+            .background(Color.Black),
+        content = {
+            val (upperRow, bottomRow, timerDisplay) = createRefs()
 
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .weight(1f)
-                .padding(vertical = 0.dp, horizontal = 10.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.Start
-        ){
-            lazy(timeViewModel, screenHeight)
-
-        }
-        // Row positioned at the bottom
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .weight(0.09f),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.Center
-        ) {
-
-            // Your Row elements
-            ButtonLayout(onClick =  {timeViewModel.buttonStartAndResume()}, nameStart, Modifier
-                .padding(2.dp)
-                .weight(1f) )
-
-            ButtonLayout(onClick =  {timeViewModel.butttonStop()},nameStop, Modifier
-                .padding(2.dp)
-                .weight(1f) )
-
-            ButtonLayout(onClick =  {timeViewModel.lapButton()},"Lap", Modifier
-                .padding(2.dp)
-                .weight(1f) )
-
-        }
-    }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height((screenHeight * 3 / 4).toInt().dp)
-                .wrapContentSize(Alignment.Center)
-                .padding(8.dp),
-            verticalArrangement = Arrangement.SpaceAround,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
+            // Upper Row
+            Row(
                 modifier = Modifier
-                    .fillMaxSize(),
-
-                contentAlignment = Alignment.TopCenter
+                    .constrainAs(upperRow) {
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        top.linkTo(timerDisplay.bottom)
+                        bottom.linkTo(bottomRow.top)
+                    }
+                    .background(Color.Black)
+                    .padding(horizontal = 10.dp)
             ) {
-                // Milliseconds
-                Text(
-                    text = timeMilli,
-                    color = Color.LightGray,
-                    fontWeight = FontWeight.Bold,
-                    // Set the desired text size
+                lazy(timeViewModel = timeViewModel, screenH = screenHeight)
+            }
+
+            // Bottom Row
+            Row(
+                modifier = Modifier
+                    .constrainAs(bottomRow) {
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }
+                    .background(Color.Black)
+                    ,
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                ButtonLayout(
+                    onClick = { timeViewModel.buttonStartAndResume() },
+                    name = nameStart,
                     modifier = Modifier
-                        .padding(8.dp)
-                        .height(50.dp)
-                        .offset(y = 470.dp, x = 150.dp),
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Visible,
-                    fontSize = 40.sp// Adjust the y value to position the text at the top
+                        .padding(2.dp)
+                        .weight(1f)
                 )
 
-
-                Text(
-                    text = timeSec,
-                    color = Color.LightGray,
-                    fontWeight = FontWeight.Bold,
-                    // Set the desired text size
+                ButtonLayout(
+                    onClick = { timeViewModel.butttonStop() },
+                    name = nameStop,
                     modifier = Modifier
-                        .padding(8.dp)
-                        .offset(y = (screenHeight * 0.22).dp)
-                        ,
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Visible,
-                    fontSize = (screenWidth*0.78f).sp// Adjust the y value to position the text at the top
+                        .padding(2.dp)
+                        .weight(1f)
                 )
 
-                Text(
-                    text = timeMin,
-                    color = Color.LightGray,
-                    fontWeight = FontWeight.Bold,
+                ButtonLayout(
+                    onClick = { timeViewModel.lapButton() },
+                    name = "Lap",
                     modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                        .offset(y = (-screenHeight * 0.12).dp),
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Visible,
-                    fontSize = (screenWidth * 0.78f).sp
+                        .padding(2.dp)
+                        .weight(1f)
                 )
             }
+
+            // Timer Display
+            Column(
+                modifier = Modifier
+                    .constrainAs(timerDisplay) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(upperRow.top)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }
+                    .fillMaxWidth()
+                    .height((screenHeight * 3 / 4).toInt().dp)
+                    .wrapContentSize(Alignment.Center)
+                    ,
+                verticalArrangement = Arrangement.SpaceAround,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+
+
+                    if (Integer.parseInt(timeHours) != 0){
+
+                        ConstraintLayout(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                            content = {
+                                val (uppertext, centerText, centerText2, bottomtext) = createRefs()
+
+                                testText(text = timeMilli, modifier = Modifier
+                                    .padding(0.dp)
+                                    .constrainAs(bottomtext) {
+                                        bottom.linkTo(upperRow.top)
+                                        end.linkTo(parent.end, margin = 5.dp)
+                                        top.linkTo(centerText.bottom)
+                                    }
+                                    .offset(y = (-195).dp)
+                                    )
+
+
+                                testText(text = timeSec, modifier = Modifier
+                                    .padding(0.dp)
+                                    .constrainAs(centerText) {
+                                        end.linkTo(parent.end)
+                                        start.linkTo(parent.start)
+                                        top.linkTo(uppertext.bottom)
+                                        bottom.linkTo(bottomtext.top)
+                                    }
+                                    .offset(y = (-155).dp),
+                                    fontS = screenWidth * 0.62f )
+
+                                testText(text = timeMin, modifier = Modifier
+                                    .fillMaxWidth()
+                                    .constrainAs(uppertext) {
+                                        top.linkTo(centerText2.bottom)
+                                        bottom.linkTo(centerText.top)
+                                        start.linkTo(parent.start)
+                                        end.linkTo(parent.end)
+                                    }
+                                    .offset(y = (-102).dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally) // Ensure content wraps horizontally
+                                    .wrapContentHeight(Alignment.CenterVertically)
+                                    , screenWidth * 0.62f)
+
+                                testText(text = timeHours, modifier = Modifier
+                                    .fillMaxWidth()
+                                    .constrainAs(centerText2) {
+                                        top.linkTo(parent.top)
+                                        bottom.linkTo(uppertext.top)
+                                        start.linkTo(parent.start)
+                                        end.linkTo(parent.end)
+                                    }
+                                    .offset(y = (-50).dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally) // Ensure content wraps horizontally
+                                    .wrapContentHeight(Alignment.CenterVertically)
+                                    , screenWidth * 0.62f)
+                            })
+
+
+
+                    } else{
+
+                        ConstraintLayout(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                            content = {
+                                val (uppertext, centerText, bottomtext) = createRefs()
+
+
+                                testText(text = timeMilli, modifier = Modifier
+                                    .padding(0.dp)
+                                    .constrainAs(bottomtext) {
+                                        bottom.linkTo(upperRow.top)
+                                        end.linkTo(parent.end, margin = 5.dp)
+                                        top.linkTo(centerText.bottom)
+                                    }
+                                    .offset(y = (-105).dp))
+
+                                testText(text = timeSec, modifier = Modifier
+                                    .padding(0.dp)
+                                    .constrainAs(centerText) {
+                                        end.linkTo(parent.end)
+                                        start.linkTo(parent.start)
+                                        top.linkTo(uppertext.bottom)
+                                        bottom.linkTo(bottomtext.top)
+                                    }
+                                    .offset(y = (-105).dp),
+                                    fontS = screenWidth * 0.78f )
+
+                                testText(text = timeMin, modifier = Modifier
+                                    .fillMaxWidth()
+                                    .constrainAs(uppertext) {
+                                        top.linkTo(parent.top)
+                                        bottom.linkTo(centerText.top)
+                                        start.linkTo(parent.start)
+                                        end.linkTo(parent.end)
+                                    }
+                                    .offset(y = (-50).dp)
+                                    .wrapContentWidth(Alignment.CenterHorizontally) // Ensure content wraps horizontally
+                                    .wrapContentHeight(Alignment.CenterVertically)
+                                    , screenWidth * 0.78f)
+
+                            }
+                        )
+
+
+
+                    }
+
+
+                    }
+
+                }
+            })
         }
-    }
+
+
+@Composable
+fun testText(text: String, modifier: Modifier, fontS: Float = 50f) {
+    Text(
+        text = text,
+        color = Color.LightGray,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.height(if (fontS == 50f) fontS.dp else (fontS - 10).dp),
+        textAlign = TextAlign.Center,
+        fontSize = fontS.sp,
+         // Set padding to zero
+        style = LocalTextStyle.current.merge(
+            TextStyle(
+                lineHeight = (fontS-30).sp, // Set lineHeight to match fontSize or desired value
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Top,
+                    trim = LineHeightStyle.Trim.FirstLineTop
+                )
+            )
+        )
+    )
+}
+
 
 @Composable
 fun ButtonLayout(onClick: () -> Unit, name: String, modifier: Modifier){
@@ -234,6 +368,8 @@ fun ButtonLayout(onClick: () -> Unit, name: String, modifier: Modifier){
 @Composable
 @Preview(widthDp = 393, heightDp = 719)
 fun TimeTextPreview() {
+
+//    testText("00", modifier = Modifier.padding(0.dp), 393.2f)
 
 //    lazy()
     val timeViewModel = TimeViewModel()

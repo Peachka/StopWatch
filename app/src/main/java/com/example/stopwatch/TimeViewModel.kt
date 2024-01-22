@@ -64,6 +64,8 @@ class TimeViewModel : ViewModel() {
         nameStop.value = "Stop"
     }
 
+
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun lapButton(){
         val newLap = timeModel.getCurrent("${timeHours.value}:${timeMin.value}:${timeSec.value}:${timer_millisec}")
@@ -79,6 +81,7 @@ class TimeViewModel : ViewModel() {
     fun getTime1Data(): LiveData<String> = timeSec
     fun getTime2Data(): LiveData<String> = timeMin
     fun getTime3Data(): LiveData<String> = timeMilli
+    fun getTime4Data(): LiveData<String> = timeHours
     fun getButtonNameContinue(): LiveData<String> = nameContinue
     fun getButtonNameStop(): LiveData<String> = nameStop
     fun getTimeLaps(): LiveData<List<String>> = _timeLaps

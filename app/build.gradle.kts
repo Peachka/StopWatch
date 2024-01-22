@@ -57,6 +57,8 @@ dependencies {
     implementation("androidx.fragment:fragment:$fragment_version")
     // Kotlin
     implementation("androidx.fragment:fragment-ktx:$fragment_version")
+
+    implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.4.0-alpha03")
     implementation("androidx.compose.runtime:runtime-livedata:1.6.0-beta03")

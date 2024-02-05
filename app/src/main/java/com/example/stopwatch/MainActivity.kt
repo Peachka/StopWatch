@@ -38,6 +38,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -106,7 +107,10 @@ fun lazy(timeViewModel: TimeViewModel, screenH: Float){
         items(itemList.size) { message ->
             Text( text = itemList[message],
                 color = Color.White,
-                fontSize = 20.sp)
+                fontSize = 20.sp,
+                modifier = Modifier.clickable {
+                    Log.d("TextField", itemList[message])
+                })
         }
     }
 }
@@ -123,8 +127,7 @@ fun TimeText(timeViewModel: TimeViewModel, screenHeight: Float, screenWidth: Flo
 
     ConstraintLayout(
         modifier = Modifier
-            .height(screenHeight.dp)
-            .width(screenWidth.dp)
+            .fillMaxSize()
             .background(Color.Black),
         content = {
             val (upperRow, bottomRow, timerDisplay) = createRefs()
@@ -309,14 +312,8 @@ fun TimeText(timeViewModel: TimeViewModel, screenHeight: Float, screenWidth: Flo
 
                             }
                         )
-
-
-
                     }
-
-
                     }
-
                 }
             })
         }
